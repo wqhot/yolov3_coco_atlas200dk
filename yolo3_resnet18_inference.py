@@ -10,6 +10,7 @@ import numpy as np
 import cv2
 import utils
 import datetime
+import time
 
 
 '''
@@ -62,25 +63,37 @@ class Yolo3_Resnet18Inference(object):
     def Inference(self, input_image):
         if isinstance(input_image, np.ndarray) is None:
             return False
-
+        strattime = time.time()
         # Image PreProcess
         resized_image = cv2.resize(input_image, (self.width, self.height))
-
+        print('[0] resize cost: ' + str((time.time() - strattime) * 1000) + 'ms')
+        strattime = time.time()
         inputImageTensor = hiai.NNTensor(resized_image)
+        print('[1] input image cost: ' + str((time.time() - strattime) * 1000) + 'ms')
+        strattime = time.time()
         nntensorList = hiai.NNTensorList(inputImageTensor)
-
+        print('[2] get list cost: ' + str((time.time() - strattime) * 1000) + 'ms')
+        strattime = time.time()
         # 调用推理接口
         resultList = self.model.Inference(self.graph, nntensorList)
-
+        print('[3] get result list cost: ' + str((time.time() - strattime) * 1000) + 'ms')
+        strattime = time.time()
         if resultList is not None:
             bboxes = utils.get_result(resultList, self.width, self.height)  # 获取检测结果
             # print("bboxes:", bboxes)
-
+            print('[4] get box cost: ' + str((time.time() - strattime) * 1000) + 'ms')
+            strattime = time.time()
             # Yolov_resnet18 Inference
             output_image = utils.draw_boxes(resized_image, bboxes)       # 在图像上画框
+            print('[5] draw box cost: ' + str((time.time() - strattime) * 1000) + 'ms')
+            strattime = time.time()
             output_image = cv2.resize(output_image, (input_image.shape[1], input_image.shape[0]))
+            print('[6] resize cost: ' + str((time.time() - strattime) * 1000) + 'ms')
+            strattime = time.time()
             img_name = datetime.datetime.now().strftime("%Y-%m-%d%H-%M-%S-%f")
             cv2.imwrite('output_image/' + str(img_name) + '.jpg', output_image)
+            print('[7] write cost: ' + str((time.time() - strattime) * 1000) + 'ms')
+            strattime = time.time()
 
         else:
             print('no person in this frame.')
